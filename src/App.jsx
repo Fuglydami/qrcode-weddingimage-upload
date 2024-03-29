@@ -1,13 +1,155 @@
-import './App.css';
-import QRCode from 'qrcode.react';
+import { useState, useEffect } from 'react';
+import {
+  ref,
+  uploadBytesResumable,
+  listAll,
+  getDownloadURL,
+} from 'firebase/storage';
+import { Button } from '@material-ui/core';
+import { CloudUpload } from '@material-ui/icons';
+import { storage } from './firebase-config';
+import { Image, Input, Progress, Spinner } from '@nextui-org/react';
 
-function App() {
-  const websiteUrl = 'https://ayodele-weds-titilope.vercel.app/';
+const App = () => {
+  const [files, setFiles] = useState([]);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [progress, setProgress] = useState(0);
+  const [isLoading, setIsloading] = useState(false);
+
+  const handleFileChange = (event) => {
+    const selectedFiles = Array.from(event.target.files);
+    setFiles(selectedFiles);
+    uploadFiles(selectedFiles);
+  };
+
+  const uploadFiles = (files) => {
+    const promises = [];
+    const storageRef = ref(storage, 'uploads');
+
+    files.forEach((file, index) => {
+      const fileRef = ref(storageRef, file.name);
+      const uploadTask = uploadBytesResumable(fileRef, file);
+      promises.push(uploadTask);
+
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          const progress = Math.round(
+            (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+          );
+          setProgress(
+            (prevProgress) => (prevProgress + progress) / (index + 1)
+          );
+        },
+        (error) => {
+          console.error('Upload error:', error);
+        },
+        async () => {
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          setUploadedFiles((prevFiles) => [
+            ...prevFiles,
+            { name: file.name, url: downloadURL },
+          ]);
+        }
+      );
+    });
+
+    Promise.all(promises).then(() => setProgress(100));
+  };
+
+  useEffect(() => {
+    const fetchUploadedFiles = async () => {
+      const storageRef = ref(storage, 'uploads');
+      setIsloading(true);
+      const { items } = await listAll(storageRef);
+      setIsloading(false);
+      const promises = items.map(async (item) => {
+        const downloadURL = await getDownloadURL(item);
+        return { name: item.name, url: downloadURL };
+      });
+      const files = await Promise.all(promises);
+      setUploadedFiles(files);
+    };
+
+    fetchUploadedFiles();
+  }, []);
+  const screenWidth = screen.width;
+
   return (
-    <main className='bg-white min-h-screen grid place-content-center '>
-      <QRCode size={300} value={websiteUrl} />
-    </main>
+    <div className='min-h-screen bg-[url("/public/background.jpg")]  bg-black py-10 text-white grid place-content-center'>
+      <h1 className='text-center  italic text-4xl mb-4 font-bold font-dancing-script'>
+        Titilope & Ayodele
+      </h1>
+      <div className='flex justify-center items-center'>
+        <h2 className='mb-3 md:w-[450px] w-[85%] opacity-70  text-center'>
+          We are truly grateful for your presence at our wedding. We would love
+          for you to share your cherished memories with us by sending any photos
+          or videos from the day. 😘{' '}
+        </h2>
+      </div>
+      <div className='flex flex-col mx-6 items-center mb-5 gap-2'>
+        <div className='flex items-center justify-center md:w-[400px] w-full'>
+          <label className='cursor-pointer flex flex-col rounded-lg border-1 border-dashed border-gray-500 w-full h-30 p-10 group text-center'>
+            <div className='h-full w-full text-center flex flex-col items-center justify-center'>
+              <p className='pointer-none text-gray-500 '>
+                <span className='text-sm'>Drag and drop or </span>
+                <span className='text-blue-600 hover:underline'>Browse</span>
+              </p>
+              <p className='text-gray-500 text-sm'>
+                Supported formates: JPEG, PNG, GIF, MP4, MOV
+              </p>
+            </div>
+            <input
+              type='file'
+              multiple
+              onChange={handleFileChange}
+              className='hidden'
+            />
+          </label>
+        </div>
+        {progress > 0 && progress < 100 && (
+          <Progress
+            aria-label='Loading...'
+            value={progress}
+            className='max-w-xs h-2'
+          />
+        )}
+      </div>
+
+      {isLoading ? (
+        <div className='grid m-4 place-content-center'>
+          <Spinner />{' '}
+        </div>
+      ) : (
+        <div className='flex m-4   md:max-w-screen-md w-full flex-wrap  gap-3'>
+          {uploadedFiles.map((file, index) => (
+            <div className='flex-shrink-0' key={index}>
+              {file.url.endsWith('.mp4') || file.url.endsWith('.mov') ? (
+                <video
+                  className='rounded-lg bg-white w-full max-h-[200px]'
+                  controls
+                >
+                  <source src={file.url} type='video/mp4' />
+                </video>
+              ) : (
+                <Image
+                  isBlurred
+                  isZoomed
+                  width={screenWidth - 30}
+                  loading='lazy'
+                  classNames={{
+                    img: `lg:w-[248px]  h-[250px]`,
+                  }}
+                  src={file.url}
+                  alt={file.name}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
-}
+};
 
 export default App;
