@@ -86,7 +86,7 @@ const App = () => {
           or videos from the day. 😘{' '}
         </h2>
       </div>
-      <div className='flex flex-col mx-6 items-center mb-5 gap-2'>
+      <div className='flex flex-col px-6 items-center mb-5 gap-2'>
         <div className='flex items-center justify-center md:w-[400px] w-full'>
           <label className='cursor-pointer flex flex-col rounded-lg border-1 border-dashed border-gray-500 w-full h-30 p-10 group text-center'>
             <div className='h-full w-full text-center flex flex-col items-center justify-center'>
@@ -120,12 +120,12 @@ const App = () => {
           <Spinner />{' '}
         </div>
       ) : (
-        <div className='flex m-4   md:max-w-screen-md w-full flex-wrap  gap-3'>
+        <div className='flex p-4   md:max-w-screen-md w-full flex-wrap  gap-3'>
           {uploadedFiles.map((file, index) => (
             <div className='flex-shrink-0' key={index}>
               {file.url.endsWith('.mp4') || file.url.endsWith('.mov') ? (
                 <video
-                  className='rounded-lg bg-white w-full max-h-[200px]'
+                  className='rounded-lg lg:w-[248px] h-[250px] bg-white w-full max-h-[200px]'
                   controls
                 >
                   <source src={file.url} type='video/mp4' />
