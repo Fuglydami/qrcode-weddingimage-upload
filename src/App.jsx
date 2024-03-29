@@ -5,10 +5,9 @@ import {
   listAll,
   getDownloadURL,
 } from 'firebase/storage';
-import { Button } from '@material-ui/core';
-import { CloudUpload } from '@material-ui/icons';
+
 import { storage } from './firebase-config';
-import { Image, Input, Progress, Spinner } from '@nextui-org/react';
+import { Image, Progress, Spinner } from '@nextui-org/react';
 
 const App = () => {
   const [files, setFiles] = useState([]);
