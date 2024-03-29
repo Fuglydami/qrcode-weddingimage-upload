@@ -79,7 +79,19 @@ const App = () => {
     fetchUploadedFiles();
   }, []);
 
-  const screenWidth = screen.width;
+  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setScreenWidth(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   return (
     <div className='min-h-screen bg-[url("/public/background.jpg")]  bg-black py-10 text-white grid place-content-center'>
@@ -135,7 +147,10 @@ const App = () => {
               file.url.includes('.mov') ||
               file.url.includes('.WebM') ? (
                 <video
-                  className='rounded-2xl lg:w-[248px] h-[250px] bg-white w-full max-h-[250px]'
+                  style={{
+                    width: screenWidth < 768 ? screenWidth - 30 : '',
+                  }}
+                  className={`max-h-[250px] rounded-2xl w-full lg:w-[230px] object-cover `}
                   controls
                 >
                   <source src={file.url} type='video/mp4' />
