@@ -4,6 +4,7 @@ import {
   uploadBytesResumable,
   listAll,
   getDownloadURL,
+  getMetadata,
 } from 'firebase/storage';
 
 import { storage } from './firebase-config';
@@ -63,15 +64,21 @@ const App = () => {
       const { items } = await listAll(storageRef);
       setIsloading(false);
       const promises = items.map(async (item) => {
+        const metadata = await getMetadata(item);
         const downloadURL = await getDownloadURL(item);
-        return { name: item.name, url: downloadURL };
+        return {
+          name: item.name,
+          url: downloadURL,
+          uploadedAt: metadata.timeCreated,
+        };
       });
       const files = await Promise.all(promises);
-      setUploadedFiles(files);
+      const sortedData = files.sort((a, b) => b.uploadedAt - a.uploadedAt);
+      setUploadedFiles(sortedData);
     };
-
     fetchUploadedFiles();
   }, []);
+
   const screenWidth = screen.width;
 
   return (
@@ -101,6 +108,7 @@ const App = () => {
             <input
               type='file'
               multiple
+              accept='image/*,video/*'
               onChange={handleFileChange}
               className='hidden'
             />
@@ -123,25 +131,29 @@ const App = () => {
         <div className='flex p-4   md:max-w-screen-md w-full flex-wrap  gap-3'>
           {uploadedFiles.map((file, index) => (
             <div className='flex-shrink-0' key={index}>
-              {file.url.endsWith('.mp4') || file.url.endsWith('.mov') ? (
+              {file.url.includes('.mp4') ||
+              file.url.includes('.mov') ||
+              file.url.includes('.WebM') ? (
                 <video
-                  className='rounded-lg lg:w-[248px] h-[250px] bg-white w-full max-h-[200px]'
+                  className='rounded-2xl lg:w-[248px] h-[250px] bg-white w-full max-h-[250px]'
                   controls
                 >
                   <source src={file.url} type='video/mp4' />
                 </video>
               ) : (
-                <Image
-                  isBlurred
-                  isZoomed
-                  width={screenWidth - 30}
-                  loading='lazy'
-                  classNames={{
-                    img: `lg:w-[248px]  h-[250px]`,
-                  }}
-                  src={file.url}
-                  alt={file.name}
-                />
+                <>
+                  <Image
+                    isBlurred
+                    isZoomed
+                    width={screenWidth - 30}
+                    loading='lazy'
+                    classNames={{
+                      img: `lg:w-[230px]  h-[250px]`,
+                    }}
+                    src={file.url}
+                    alt={file.name}
+                  />
+                </>
               )}
             </div>
           ))}
