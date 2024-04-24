@@ -123,7 +123,7 @@ const App = () => {
         <h2 className='mb-3 md:w-[450px] w-[85%] opacity-70  text-center'>
           We are truly grateful for your presence at our wedding. We would love
           for you to share your cherished memories with us by sending any photos
-          or videos from the day. 😘{' '}
+          from the day. 😘{' '}
         </h2>
       </div>
       <div className='flex flex-col px-6 items-center mb-5 gap-2'>
