@@ -30,10 +30,19 @@ const App = () => {
   const [isLoading, setIsloading] = useState(false);
 
   const handleFileChange = async (event) => {
-    const file = event.target.files[0];
-    const compressedFile = await imageCompression(file, imageCompressOptions);
-    const compressed = blobToFile(compressedFile, file);
-    uploadFiles([compressed]);
+    const files = Array.from(event.target.files);
+    const compressedFiles = await Promise.all(
+      files.map(async (file) => {
+        const compressedBlob = await imageCompression(
+          file,
+          imageCompressOptions
+        );
+        return blobToFile(compressedBlob, file);
+      })
+    );
+    // const compressedFile = await imageCompression(file, imageCompressOptions);
+    // const compressed = blobToFile(compressedFile, file);
+    uploadFiles(compressedFiles);
   };
 
   const uploadFiles = (files) => {
