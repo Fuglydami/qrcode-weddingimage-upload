@@ -9,17 +9,31 @@ import {
 
 import { storage } from './firebase-config';
 import { Image, Progress, Spinner } from '@nextui-org/react';
+import imageCompression from 'browser-image-compression';
+
+const imageCompressOptions = {
+  maxSizeMB: 0.2,
+  maxWidthOrHeight: 1920,
+  useWebWorker: true,
+};
+
+const blobToFile = (blob, originalFile) => {
+  return new File([blob], originalFile.name, {
+    type: originalFile.type,
+    lastModified: originalFile.lastModified,
+  });
+};
 
 const App = () => {
-  const [files, setFiles] = useState([]);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [progress, setProgress] = useState(0);
   const [isLoading, setIsloading] = useState(false);
 
-  const handleFileChange = (event) => {
-    const selectedFiles = Array.from(event.target.files);
-    setFiles(selectedFiles);
-    uploadFiles(selectedFiles);
+  const handleFileChange = async (event) => {
+    const file = event.target.files[0];
+    const compressedFile = await imageCompression(file, imageCompressOptions);
+    const compressed = blobToFile(compressedFile, file);
+    uploadFiles([compressed]);
   };
 
   const uploadFiles = (files) => {
@@ -30,7 +44,6 @@ const App = () => {
       const fileRef = ref(storageRef, file.name);
       const uploadTask = uploadBytesResumable(fileRef, file);
       promises.push(uploadTask);
-
       uploadTask.on(
         'state_changed',
         (snapshot) => {
@@ -114,13 +127,13 @@ const App = () => {
                 <span className='text-blue-600 hover:underline'>Browse</span>
               </p>
               <p className='text-gray-500 text-sm'>
-                Supported formates: JPEG, PNG, GIF, MP4, MOV
+                Supported formats: JPEG, PNG, GIF
               </p>
             </div>
             <input
               type='file'
               multiple
-              accept='image/*,video/*'
+              accept='image/*'
               onChange={handleFileChange}
               className='hidden'
             />
