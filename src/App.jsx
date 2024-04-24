@@ -40,8 +40,7 @@ const App = () => {
         return blobToFile(compressedBlob, file);
       })
     );
-    // const compressedFile = await imageCompression(file, imageCompressOptions);
-    // const compressed = blobToFile(compressedFile, file);
+
     uploadFiles(compressedFiles);
   };
 
