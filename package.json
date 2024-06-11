@@ -11,7 +11,9 @@
   },
   "dependencies": {
     "@nextui-org/react": "^2.2.10",
+    "axios": "^1.7.2",
     "browser-image-compression": "^2.0.2",
+    "cloudinary": "^2.2.0",
     "firebase": "^9.0.0",
     "framer-motion": "^11.0.23",
     "qrcode.react": "^3.1.0",

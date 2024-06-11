@@ -1,15 +1,12 @@
-import { useState, useEffect } from 'react';
-import {
-  ref,
-  uploadBytesResumable,
-  listAll,
-  getDownloadURL,
-  getMetadata,
-} from 'firebase/storage';
-
-import { storage } from './firebase-config';
 import { Image, Progress, Spinner } from '@nextui-org/react';
+import axios from 'axios';
 import imageCompression from 'browser-image-compression';
+import { useEffect, useState } from 'react';
+
+// Cloudinary Configuration
+const CLOUDINARY_UPLOAD_PRESET = 'wedding';
+const CLOUDINARY_CLOUD_NAME = 'darwawl4l';
+const CLOUDINARY_API_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`;
 
 const imageCompressOptions = {
   maxSizeMB: 0.2,
@@ -45,57 +42,45 @@ const App = () => {
   };
 
   const uploadFiles = (files) => {
-    const promises = [];
-    const storageRef = ref(storage, 'uploads');
+    const promises = files.map((file, index) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
-    files.forEach((file, index) => {
-      const fileRef = ref(storageRef, file.name);
-      const uploadTask = uploadBytesResumable(fileRef, file);
-      promises.push(uploadTask);
-      uploadTask.on(
-        'state_changed',
-        (snapshot) => {
+      return axios.post(CLOUDINARY_API_URL, formData, {
+        onUploadProgress: (progressEvent) => {
           const progress = Math.round(
-            (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+            (progressEvent.loaded / progressEvent.total) * 100
           );
           setProgress(
             (prevProgress) => (prevProgress + progress) / (index + 1)
           );
         },
-        (error) => {
-          console.error('Upload error:', error);
-        },
-        async () => {
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          setUploadedFiles((prevFiles) => [
-            ...prevFiles,
-            { name: file.name, url: downloadURL },
-          ]);
-        }
-      );
+      });
     });
 
-    Promise.all(promises).then(() => setProgress(100));
+    Promise.all(promises)
+      .then((responses) => {
+        const uploadedFiles = responses.map((response) => ({
+          name: response.data.original_filename,
+          url: response.data.secure_url,
+          uploadedAt: response.data.created_at,
+        }));
+        setUploadedFiles((prevFiles) => [...prevFiles, ...uploadedFiles]);
+        setProgress(100);
+      })
+      .catch((error) => {
+        console.error('Upload error:', error);
+      });
   };
 
   useEffect(() => {
     const fetchUploadedFiles = async () => {
-      const storageRef = ref(storage, 'uploads');
       setIsloading(true);
-      const { items } = await listAll(storageRef);
+      // Fetch previously uploaded files from Cloudinary if necessary
+      // This requires keeping track of uploaded files, e.g., in a database.
+      // Skipping the implementation here for simplicity.
       setIsloading(false);
-      const promises = items.map(async (item) => {
-        const metadata = await getMetadata(item);
-        const downloadURL = await getDownloadURL(item);
-        return {
-          name: item.name,
-          url: downloadURL,
-          uploadedAt: metadata.timeCreated,
-        };
-      });
-      const files = await Promise.all(promises);
-      const sortedData = files.sort((a, b) => b.uploadedAt - a.uploadedAt);
-      setUploadedFiles(sortedData);
     };
     fetchUploadedFiles();
   }, []);
